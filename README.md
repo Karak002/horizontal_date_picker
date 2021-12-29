@@ -6,5 +6,5 @@ a horizontal date picker for get a DateValue
 
 
 
-<img src="https://raw.githubusercontent.com/Karak002/horizontal_date_picker/main/Screenshot/WhatsApp%20Image%202021-12-29%20at%2014.22.33%20(1).jpeg" width="600" height="400" />
+<img src="https://raw.githubusercontent.com/Karak002/horizontal_date_picker/main/Screenshot/WhatsApp%20Image%202021-12-29%20at%2014.22.33%20(1).jpeg" width="600" height="600" />
 
