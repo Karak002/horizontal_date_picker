@@ -1,60 +1,102 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:get/get.dart';
 import 'package:hexcolor/hexcolor.dart';
-import '../main.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'dart:io';
+
+String? _localeLanguageDate;
 
 class CardModels {
   dynamic backgroundColor;
-  dynamic textColor;
   DateTime data;
 
   CardModels({
     this.backgroundColor,
-    required this.textColor,
     required this.data,
   });
 }
 
 class DatePicker extends StatefulWidget {
+  ///serve per impostare il colore di background delle card, accetta valori di tipo **MaterialColor** o **Color**
   final dynamic backgroundColor;
   final ValueChanged? onChanged;
-  final bool filterVisibility;
-  //l'altezza del widget viene calcolata in percentuale quindi 15 per esempio si riferisce al 15% dello spazio disponibile
-  final double height;
+
+  /// Richiede un valore **booleano**, se false nasconde i filtri, se è true li mostra
+  final bool? filterVisibility;
+
+  ///Colore per il font all'interno delle tabs, richiede un valore di tipo **MaterialColor** o **Color**, il colore di default è nero
+  final dynamic fontColor;
+
+  ///l'altezza del widget viene calcolata in percentuale quindi 15 per esempio si riferisce al 15% dello spazio disponibile
+  final double? height;
+
+  ///Dimensione della stringa che rappresenta il mese nel calendario
+  final int? monthFontSize;
+
+  ///Dimenaione dei font delle scritte
+  final int? textSize;
+
+  ///Dimensione del numero al centro del widget
+  final int? dayFontSize;
+
+  ///Dimensione del font dell'anno numerico
+  final double? dimensioneAnno;
+
+  ///prende in input un tipo **DateTime**, sarà la data dalla quale il caldendario inizierà, Questo è un esempio di data corretta =>  DateTime.parse("2021-12-28")
+  final DateTime? dataInizio;
+
+  ///Prende in inuput un tipo **DateTime**, sarà la data dalla quale il calendario inizierà,  Questo è un esempio di data corretta =>  DateTime.parse("2021-12-28")
+  final DateTime? dataFine;
+
+  ///Prende in input un valore di tipo **String**, con la quale andrà a tradurre tutti i testi del calendario, [Qua la lista completa dei locale disponibili](https://pub.dev/documentation/intl/latest/date_symbol_data_http_request/availableLocalesForDateFormatting.html)
+  final String? locale;
+
   const DatePicker(
       {Key? key,
-      required this.backgroundColor,
+      this.backgroundColor,
       this.onChanged,
-      required this.filterVisibility,
-      required this.height})
+      this.filterVisibility,
+      this.height,
+      this.fontColor,
+      this.dataInizio,
+      this.dayFontSize,
+      this.textSize,
+      this.dimensioneAnno,
+      this.dataFine,
+      this.locale,
+      this.monthFontSize})
       : super(key: key);
 
   @override
   _DatePickerState createState() => _DatePickerState();
 }
 
-class _DatePickerState extends State<DatePicker> with Translations {
+class _DatePickerState extends State<DatePicker> {
   List<CardModels> days = [];
-  //funzione per creare la lista con 1 anno prima e 1 anno dopo rispetto la data odierna
+
+  ///funzione per creare la lista con 1 anno prima e 1 anno dopo rispetto la data odierna
   List<CardModels> calculateInterval(DateTime startDate, DateTime endDate) {
     for (int i = 0; i <= endDate.difference(startDate).inDays; i++) {
       days.add(CardModels(
-          backgroundColor: widget.backgroundColor,
-          textColor: Colors.black,
+          backgroundColor: widget.backgroundColor ?? Colors.white,
           data: startDate.add(Duration(days: i))));
     }
 
     return days;
   }
 
-  //Funzione per inizializzare i dati necessari per generare la lista
+  var _difference;
+
+  ///Funzione per inizializzare i dati necessari per generare la lista
   createDateList() {
-    final startDate = DateTime.now().subtract(const Duration(days: 365));
-    final endDate = DateTime.now().add(const Duration(days: 365));
+    final startDate =
+        widget.dataInizio ?? DateTime.now().subtract(const Duration(days: 365));
+    final endDate =
+        widget.dataFine ?? DateTime.now().add(const Duration(days: 365));
     final interval = calculateInterval(startDate, endDate);
   }
 
+  ///Funzione per impostare il valore iniziale del calendario al giorno odierno
   setInitialvalue() {
     days.forEach((element) {
       if (DateFormat('yMEd').format(DateTime.now()) ==
@@ -64,13 +106,21 @@ class _DatePickerState extends State<DatePicker> with Translations {
     });
   }
 
+  ///Funzione per inizializzare il linguaggio del calendario, che nel caso in cui non venga passato al costruttore prenderà in defalut quello del telefono
+  setLocalLanguage() {
+    _localeLanguageDate = widget.locale ?? Platform.localeName;
+  }
+
   @override
-  //Nell'initstate si va ad eseguire la funzione createDateList() per generare all'apertuta dell'app la lista con le date
+
+  ///Nell'initstate si vanno ad eseguire tutte le funzioni di iniziallizzazione per fornire tutte le informazioni necessarie al calendario per funzionare
   void initState() {
     super.initState();
+    setLocalLanguage();
+    initializeDateFormatting();
     createDateList();
     setInitialvalue();
-    Get.updateLocale(locale!);
+    //Get.updateLocale();
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       if (controllerScroll.hasClients) {
         controllerScroll.position.jumpTo(32800);
@@ -80,210 +130,26 @@ class _DatePickerState extends State<DatePicker> with Translations {
   }
 
   final controllerScroll = ScrollController();
-  // ignore: empty_constructor_bodies
-
-  //controller per la listviewBuilder per scegliere la posizione iniziale
-
-//Funzione per filtrare la lista in base al nome del mese che si va a premere
-  filterList(String monthName) {
-    List toRemove = [];
-    days.clear();
-    createDateList();
-    controllerScroll.jumpTo(0);
-    days.forEach((element) {
-      if (DateFormat('MMMM').format(element.data) != monthName) {
-        toRemove.add(element);
-      }
-    });
-    days.removeWhere((element) => toRemove.contains(element));
-    setInitialvalue();
-    setState(() {});
-    Navigator.pop(context);
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: SizeConfig.blockSizeVertical! * widget.height.toDouble(),
+      height: SizeConfig.blockSizeVertical! * (widget.height ?? 14),
       width: SizeConfig.blockSizeHorizontal! * 100,
       constraints: const BoxConstraints(minHeight: 80, minWidth: 100),
       child: Column(
         children: [
-          Visibility(
-            visible: widget.filterVisibility,
-            child: Container(
-                alignment: AlignmentDirectional.centerStart,
-                child: InkWell(
-                    onTap: () {
-                      print('Menu aperto');
-
-                      showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                                title:
-                                    Center(child: Text('Filtra per mese'.tr)),
-                                content: Column(
-                                  children: [
-                                    Expanded(
-                                      child: ListView(
-                                        children: [
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('January');
-                                                  },
-                                                  child: Text('January'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('February');
-                                                  },
-                                                  child: Text('February'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('March');
-                                                  },
-                                                  child: Text('March'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('April');
-                                                  },
-                                                  child: Text('April'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('May');
-                                                  },
-                                                  child: Text('May'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('June');
-                                                  },
-                                                  child: Text('June'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('July');
-                                                  },
-                                                  child: Text('July'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('August');
-                                                  },
-                                                  child: Text('August'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('September');
-                                                  },
-                                                  child: Text('September'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('October');
-                                                  },
-                                                  child: Text('October'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('November');
-                                                  },
-                                                  child: Text('November'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    2,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    filterList('December');
-                                                  },
-                                                  child: Text('December'.tr))),
-                                          SizedBox(
-                                            height:
-                                                SizeConfig.blockSizeVertical! *
-                                                    4,
-                                          ),
-                                          Center(
-                                              child: InkWell(
-                                                  onTap: () {
-                                                    days.clear();
-                                                    createDateList();
-                                                    setState(() {});
-                                                    Navigator.pop(context);
-                                                    controllerScroll
-                                                        .jumpTo(32800);
-                                                    setInitialvalue();
-                                                  },
-                                                  child: const Text(
-                                                    'Remove filter',
-                                                    style: TextStyle(
-                                                        color: Colors.red),
-                                                  )))
-                                        ],
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ));
-                    },
-                    child: const Icon(Icons.arrow_drop_down_sharp))),
-          ),
+          // Visibility(
+          //   visible: widget.filterVisibility,
+          //   child: Container(
+          //       alignment: AlignmentDirectional.centerStart,
+          //       child: InkWell(
+          //           onTap: () {
+          //             showDialog(
+          //                 context: context, builder: (_) => AlertDialog());
+          //           },
+          //           child: const Icon(Icons.arrow_drop_down_sharp))),
+          // ),
           Expanded(
             child: ListView.builder(
                 controller: controllerScroll,
@@ -296,7 +162,7 @@ class _DatePickerState extends State<DatePicker> with Translations {
                     child: InkWell(
                       onTap: () {
                         for (var element in days) {
-                          element.backgroundColor = Colors.white;
+                          element.backgroundColor = widget.backgroundColor;
                         }
                         days[index].backgroundColor = HexColor('#FF7700');
                         widget.onChanged!(days[index].data.toString());
@@ -311,7 +177,12 @@ class _DatePickerState extends State<DatePicker> with Translations {
                               padding: const EdgeInsets.only(
                                   left: 1, right: 1, top: 4, bottom: 4),
                               child: Text(
-                                DateFormat('MMMM').format(days[index].data).tr,
+                                DateFormat('MMMM', _localeLanguageDate)
+                                    .format(days[index].data),
+                                style: TextStyle(
+                                    color: widget.fontColor ?? Colors.black,
+                                    fontSize:
+                                        widget.monthFontSize?.toDouble() ?? 14),
                               ),
                             ),
                             const Spacer(),
@@ -319,18 +190,26 @@ class _DatePickerState extends State<DatePicker> with Translations {
                               fit: BoxFit.scaleDown,
                               child: Text(
                                 days[index].data.day.toString(),
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 19),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize:
+                                        widget.dayFontSize?.toDouble() ?? 19,
+                                    color: widget.fontColor ?? Colors.black),
                               ),
                             ),
                             const Spacer(),
                             Text(
-                              DateFormat('EEEE').format(days[index].data).tr,
-                              style: const TextStyle(color: Colors.black),
+                              DateFormat('EEEE', _localeLanguageDate)
+                                  .format(days[index].data),
+                              style: TextStyle(
+                                color: widget.fontColor ?? Colors.black,
+                              ),
                             ),
                             Text(
                               days[index].data.year.toString(),
-                              style: const TextStyle(fontSize: 8),
+                              style: TextStyle(
+                                  fontSize: widget.dimensioneAnno ?? 8,
+                                  color: widget.fontColor ?? Colors.black),
                             ),
                             SizedBox(
                               height: SizeConfig.blockSizeVertical! * 0.5,
@@ -346,71 +225,6 @@ class _DatePickerState extends State<DatePicker> with Translations {
       ),
     );
   }
-
-  @override
-  Map<String, Map<String, String>> get keys => throw UnimplementedError();
-}
-
-//TRADUZIONI
-class LocalString extends Translations {
-  @override
-  Map<String, Map<String, String>> get keys => {
-        //Lingua inglese, English language
-        'en_US': {
-          //Giorni della settimana
-          'Monday': 'Monday',
-          'Tuesday': 'Tuesday',
-          'Wednesday': 'Wednesay',
-          'Thursday': 'Thursday',
-          'Friday': 'Friday',
-          'Saturday': 'Saturday',
-          'Sunday': 'Sunday',
-
-          //Mesi
-          'January': 'January',
-          'February': 'February',
-          'March': 'March',
-          'April': 'April',
-          'May': 'May',
-          'June': 'June',
-          'July': 'July',
-          'August': 'August',
-          'September': 'September',
-          'October': 'October',
-          'November': 'November',
-          'December': 'December',
-          //UI
-          'Filtra per mese': 'Filter by month'
-        },
-        //Lingua italiana
-        'it_IT': {
-          //Giorni della settimana
-          'Monday': 'Lunedì',
-          'Tuesday': 'Martedì',
-          'Wednesday': 'Mercoledì',
-          'Thursday': 'Giovedì',
-          'Friday': 'Venerdì',
-          'Saturday': 'Sabato',
-          'Sunday': 'Domenica',
-
-          //Mesi
-          'January': 'Gennaio',
-          'February': 'Febbraio',
-          'March': 'Marzo',
-          'April': 'Aprile',
-          'May': 'Maggio',
-          'June': 'Giugno',
-          'July': 'Luglio',
-          'August': 'Agosto',
-          'September': 'Settembre',
-          'October': 'Ottobre',
-          'November': 'Novembre',
-          'December': 'Dicembre',
-
-          //UI
-          'Filtra per mese': 'Filtra per mese'
-        }
-      };
 }
 
 //mediaquery

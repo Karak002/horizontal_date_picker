@@ -1,23 +1,20 @@
 import 'package:date_picker/widget/date_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-//Get.deviceLocale serve per prendere automaticamente la lingua del telefono per mostrare la lingua corretta
-var locale = Get.deviceLocale;
+///Get.deviceLocale serve per prendere automaticamente la lingua del telefono per mostrare la lingua corretta
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
   @override
+  //Locale('en', 'US')
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      translations: LocalString(),
-      locale: Get.deviceLocale,
+    return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -36,12 +33,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  void init() {
-    super.initState();
-    Get.updateLocale(locale!);
-  }
-
   String? informazione;
+
   @override
   Widget build(BuildContext context) {
     SizeConfig().init(context);
@@ -54,9 +47,10 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             SizedBox(
               child: DatePicker(
+                dayFontSize: 19,
                 filterVisibility: true,
-                height: 15,
-                backgroundColor: Colors.white,
+                fontColor: Colors.white,
+                backgroundColor: Colors.green,
                 onChanged: (value) {
                   setState(() {
                     informazione = value.toString();
