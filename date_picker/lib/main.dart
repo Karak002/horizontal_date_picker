@@ -47,10 +47,17 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             SizedBox(
               child: DatePicker(
-                dayFontSize: 19,
+                height: 19,
+                dataInizio: DateTime.parse(
+                    '2021-01-25 ${DateTime.now().hour.toString().padLeft(2, "0")}:${DateTime.now().minute.toString().padLeft(2, "0")}'),
+                dataFine: DateTime.parse(
+                    '2023-01-25 ${DateTime.now().hour.toString().padLeft(2, "0")}:${DateTime.now().minute.toString().padLeft(2, "0")}'),
+                dayFontSize: 24,
+                monthFontSize: 17,
                 filterVisibility: true,
                 fontColor: Colors.white,
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.grey,
+                selectColor: Colors.blue,
                 onChanged: (value) {
                   setState(() {
                     informazione = value.toString();
@@ -58,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               ),
             ),
-            Text(informazione.toString())
+            Text(informazione.toString()),
           ],
         ));
   }

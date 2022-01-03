@@ -4,7 +4,22 @@ import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'dart:io';
 
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+
 String? _localeLanguageDate;
+String _yearIndex = '';
+int counter = 0;
+
+///List _listaAnni andrà a contenere tutti gli anni che poi andrò a filtrare
+final List _listaAnni = [];
+
+///Modello per creare i testi che saranno nel menù del filtro così che si possa avere la possibilità di modificare i loro parametri, l'ho utilizzata per avere la possibilità di evidenziare il campo attivo
+class TextModels {
+  Text testo;
+  dynamic colore;
+
+  TextModels(this.colore, this.testo);
+}
 
 class CardModels {
   dynamic backgroundColor;
@@ -19,10 +34,12 @@ class CardModels {
 class DatePicker extends StatefulWidget {
   ///serve per impostare il colore di background delle card, accetta valori di tipo **MaterialColor** o **Color**
   final dynamic backgroundColor;
+
+  ///Callback che va a riportare il valore della variabile ogni vvolta che vengono eseguite modifiche sul widget, ad esempio il click su una data diversa da quella già selezionata
   final ValueChanged? onChanged;
 
   /// Richiede un valore **booleano**, se false nasconde i filtri, se è true li mostra
-  final bool? filterVisibility;
+  final bool filterVisibility;
 
   ///Colore per il font all'interno delle tabs, richiede un valore di tipo **MaterialColor** o **Color**, il colore di default è nero
   final dynamic fontColor;
@@ -33,38 +50,46 @@ class DatePicker extends StatefulWidget {
   ///Dimensione della stringa che rappresenta il mese nel calendario
   final int? monthFontSize;
 
-  ///Dimenaione dei font delle scritte
-  final int? textSize;
-
   ///Dimensione del numero al centro del widget
   final int? dayFontSize;
 
   ///Dimensione del font dell'anno numerico
   final double? dimensioneAnno;
 
-  ///prende in input un tipo **DateTime**, sarà la data dalla quale il caldendario inizierà, Questo è un esempio di data corretta =>  DateTime.parse("2021-12-28")
+  ///prende in input un tipo **DateTime**, sarà la data dalla quale il caldendario inizierà, Questo è un esempio di data corretta =>  DateTime.parse("2023-01-25 10:06") 10:06 rappresenta l'ora ed il minuto
   final DateTime? dataInizio;
 
-  ///Prende in inuput un tipo **DateTime**, sarà la data dalla quale il calendario inizierà,  Questo è un esempio di data corretta =>  DateTime.parse("2021-12-28")
+  ///Prende in inuput un tipo **DateTime**, sarà la data dalla quale il calendario inizierà,  Questo è un esempio di data corretta =>  DateTime.parse("2023-01-25 10:06") 10.06 rappresenta l'ora ed il minuto
   final DateTime? dataFine;
 
   ///Prende in input un valore di tipo **String**, con la quale andrà a tradurre tutti i testi del calendario, [Qua la lista completa dei locale disponibili](https://pub.dev/documentation/intl/latest/date_symbol_data_http_request/availableLocalesForDateFormatting.html)
   final String? locale;
 
+  ///Prende in input un valore di tipo intero(int) e lo imposta come grandezza del font del nome del giorno
+  final int? dayNameFontSize;
+
+  ///Prende in input un tipo String che rappresenterà il nome della font-family da utilizzare ad esempio: 'Roboto'
+  final String? fontFamily;
+
+  ///Colore che viene assegnato alla card che viene selezionata, accetta valori di tipo **MaterialColor** oppure **Color**
+  final dynamic selectColor;
+
   const DatePicker(
       {Key? key,
       this.backgroundColor,
       this.onChanged,
-      this.filterVisibility,
+      required this.filterVisibility,
       this.height,
       this.fontColor,
       this.dataInizio,
       this.dayFontSize,
-      this.textSize,
       this.dimensioneAnno,
+      this.dayNameFontSize,
       this.dataFine,
       this.locale,
-      this.monthFontSize})
+      this.monthFontSize,
+      this.fontFamily,
+      this.selectColor})
       : super(key: key);
 
   @override
@@ -74,7 +99,7 @@ class DatePicker extends StatefulWidget {
 class _DatePickerState extends State<DatePicker> {
   List<CardModels> days = [];
 
-  ///funzione per creare la lista con 1 anno prima e 1 anno dopo rispetto la data odierna
+  ///funzione per creare la lista dei giorni con gli anni in base alla data iniziale e alla data finale
   List<CardModels> calculateInterval(DateTime startDate, DateTime endDate) {
     for (int i = 0; i <= endDate.difference(startDate).inDays; i++) {
       days.add(CardModels(
@@ -85,8 +110,6 @@ class _DatePickerState extends State<DatePicker> {
     return days;
   }
 
-  var _difference;
-
   ///Funzione per inizializzare i dati necessari per generare la lista
   createDateList() {
     final startDate =
@@ -96,20 +119,60 @@ class _DatePickerState extends State<DatePicker> {
     final interval = calculateInterval(startDate, endDate);
   }
 
-  ///Funzione per impostare il valore iniziale del calendario al giorno odierno
-  setInitialvalue() {
+  filterList(int year) {
+    List toRemove = [];
+    days.clear();
+    createDateList();
+
     days.forEach((element) {
-      if (DateFormat('yMEd').format(DateTime.now()) ==
-          DateFormat('yMEd').format(element.data)) {
-        element.backgroundColor = HexColor('FF7700');
+      if (element.data.year != year) {
+        toRemove.add(element);
       }
     });
+    days.removeWhere((element) => toRemove.contains(element));
+    setInitialvalue();
+    setState(() {});
+    Navigator.pop(context);
+  }
+
+  ///Funzione per impostare il valore iniziale del calendario al giorno odierno
+  setInitialvalue() {
+    counter = 0;
+    for (var element in days) {
+      if (DateFormat('yMEd').format(DateTime.now()) ==
+          DateFormat('yMEd').format(element.data)) {
+        element.backgroundColor = widget.selectColor ?? HexColor('FF7700');
+        break;
+        // widget.onChanged!(DateTime.now());
+      } else {
+        counter++;
+      }
+    }
+    print(counter);
   }
 
   ///Funzione per inizializzare il linguaggio del calendario, che nel caso in cui non venga passato al costruttore prenderà in defalut quello del telefono
   setLocalLanguage() {
     _localeLanguageDate = widget.locale ?? Platform.localeName;
   }
+
+  int provina = 0;
+
+  ///Funzione che va a calcolare gli anni per poi poterli utilizzare per filtrare la lista
+  calculateYearFilter() {
+    days.forEach((element) {
+      if (_listaAnni.contains(element.data.year)) {
+      } else {
+        provina++;
+        print(provina);
+        _listaAnni.add(element.data.year);
+        _textAnni
+            .add(TextModels(Colors.grey, Text(element.data.year.toString())));
+      }
+    });
+  }
+
+  final ItemScrollController itemScrollController = ItemScrollController();
 
   @override
 
@@ -120,17 +183,15 @@ class _DatePickerState extends State<DatePicker> {
     initializeDateFormatting();
     createDateList();
     setInitialvalue();
-    //Get.updateLocale();
+    calculateYearFilter();
     WidgetsBinding.instance!.addPostFrameCallback((_) {
-      if (controllerScroll.hasClients) {
-        controllerScroll.position.jumpTo(32800);
-        widget.onChanged!(DateTime.now());
-      }
+      itemScrollController.jumpTo(index: counter);
+      widget.onChanged!(DateTime.now());
     });
   }
 
-  final controllerScroll = ScrollController();
-
+  DateTime selectedDate = DateTime.now();
+  List<TextModels> _textAnni = [];
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -139,33 +200,120 @@ class _DatePickerState extends State<DatePicker> {
       constraints: const BoxConstraints(minHeight: 80, minWidth: 100),
       child: Column(
         children: [
-          // Visibility(
-          //   visible: widget.filterVisibility,
-          //   child: Container(
-          //       alignment: AlignmentDirectional.centerStart,
-          //       child: InkWell(
-          //           onTap: () {
-          //             showDialog(
-          //                 context: context, builder: (_) => AlertDialog());
-          //           },
-          //           child: const Icon(Icons.arrow_drop_down_sharp))),
-          // ),
+          Visibility(
+            visible: widget.filterVisibility,
+            child: Container(
+                alignment: AlignmentDirectional.centerStart,
+                child: InkWell(
+                    child: Row(
+                  children: [
+                    InkWell(
+                        onTap: () {
+                          showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                    content: Column(
+                                      children: [
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: _textAnni.length,
+                                            itemBuilder: (context, index) {
+                                              return Column(
+                                                children: [
+                                                  Center(
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        filterList(int.parse(
+                                                            _textAnni[index]
+                                                                .testo
+                                                                .data
+                                                                .toString()));
+                                                        _yearIndex =
+                                                            _textAnni[index]
+                                                                .testo
+                                                                .data
+                                                                .toString();
+                                                        _textAnni
+                                                            .forEach((element) {
+                                                          element.colore =
+                                                              Colors.grey;
+                                                        });
+                                                        _textAnni[index]
+                                                                .colore =
+                                                            Colors.black;
+                                                        setState(() {});
+                                                      },
+                                                      child: Text(
+                                                        _textAnni[index]
+                                                            .testo
+                                                            .data
+                                                            .toString(),
+                                                        style: TextStyle(
+                                                            fontSize: 19,
+                                                            color:
+                                                                _textAnni[index]
+                                                                    .colore),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    height: SizeConfig
+                                                            .blockSizeVertical! *
+                                                        2,
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        InkWell(
+                                          child: CircleAvatar(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                days.clear();
+                                                _textAnni.forEach((element) {
+                                                  element.colore = Colors.grey;
+                                                });
+                                                _yearIndex = '';
+                                                setState(() {});
+                                                createDateList();
+                                                Navigator.pop(context);
+                                                setInitialvalue();
+                                                itemScrollController.jumpTo(
+                                                    index: counter);
+                                              },
+                                              icon: const Icon(
+                                                  Icons.cleaning_services),
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ));
+                        },
+                        child: const Icon(Icons.arrow_drop_down_sharp)),
+                    Text(_yearIndex)
+                  ],
+                ))),
+          ),
           Expanded(
-            child: ListView.builder(
-                controller: controllerScroll,
+            child: ScrollablePositionedList.builder(
+                itemScrollController: itemScrollController,
                 scrollDirection: Axis.horizontal,
                 itemCount: days.length,
                 itemBuilder: (context, index) {
                   return SizedBox(
                     height: SizeConfig.blockSizeVertical! * 100,
-                    width: SizeConfig.blockSizeHorizontal! * 25,
+                    width: SizeConfig.screenWidth! * 0.25,
                     child: InkWell(
                       onTap: () {
                         for (var element in days) {
                           element.backgroundColor = widget.backgroundColor;
                         }
-                        days[index].backgroundColor = HexColor('#FF7700');
-                        widget.onChanged!(days[index].data.toString());
+                        days[index].backgroundColor =
+                            widget.selectColor ?? HexColor('#FF7700');
+                        selectedDate = days[index].data;
+                        widget.onChanged!(selectedDate);
                         setState(() {});
                       },
                       child: Card(
@@ -182,7 +330,12 @@ class _DatePickerState extends State<DatePicker> {
                                 style: TextStyle(
                                     color: widget.fontColor ?? Colors.black,
                                     fontSize:
-                                        widget.monthFontSize?.toDouble() ?? 14),
+                                        widget.monthFontSize?.toDouble() ?? 14,
+                                    fontFamily: widget.fontFamily ??
+                                        Theme.of(context)
+                                            .textTheme
+                                            .bodyText1
+                                            ?.fontFamily),
                               ),
                             ),
                             const Spacer(),
@@ -191,10 +344,16 @@ class _DatePickerState extends State<DatePicker> {
                               child: Text(
                                 days[index].data.day.toString(),
                                 style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize:
-                                        widget.dayFontSize?.toDouble() ?? 19,
-                                    color: widget.fontColor ?? Colors.black),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize:
+                                      widget.dayFontSize?.toDouble() ?? 19,
+                                  color: widget.fontColor ?? Colors.black,
+                                  fontFamily: widget.fontFamily ??
+                                      Theme.of(context)
+                                          .textTheme
+                                          .bodyText1
+                                          ?.fontFamily,
+                                ),
                               ),
                             ),
                             const Spacer(),
@@ -202,12 +361,23 @@ class _DatePickerState extends State<DatePicker> {
                               DateFormat('EEEE', _localeLanguageDate)
                                   .format(days[index].data),
                               style: TextStyle(
-                                color: widget.fontColor ?? Colors.black,
-                              ),
+                                  color: widget.fontColor ?? Colors.black,
+                                  fontSize:
+                                      widget.dayNameFontSize?.toDouble() ?? 15,
+                                  fontFamily: widget.fontFamily ??
+                                      Theme.of(context)
+                                          .textTheme
+                                          .bodyText1
+                                          ?.fontFamily),
                             ),
                             Text(
                               days[index].data.year.toString(),
                               style: TextStyle(
+                                  fontFamily: widget.fontFamily ??
+                                      Theme.of(context)
+                                          .textTheme
+                                          .bodyText1
+                                          ?.fontFamily,
                                   fontSize: widget.dimensioneAnno ?? 8,
                                   color: widget.fontColor ?? Colors.black),
                             ),
