@@ -44,6 +44,9 @@ class DatePicker extends StatefulWidget {
   ///Colore per il font all'interno delle tabs, richiede un valore di tipo **MaterialColor** o **Color**, il colore di default è nero
   final dynamic fontColor;
 
+  ///Prende in input un valore di tipo Double, lo 0.20 percento equivale ad 20%, perché in questo caso si prende la misura di tutto lo schermo e non del contenitore che lo contiene
+  final double? width;
+
   ///l'altezza del widget viene calcolata in percentuale quindi 15 per esempio si riferisce al 15% dello spazio disponibile
   final double? height;
 
@@ -87,6 +90,7 @@ class DatePicker extends StatefulWidget {
       this.dayNameFontSize,
       this.dataFine,
       this.locale,
+      this.width,
       this.monthFontSize,
       this.fontFamily,
       this.selectColor})
@@ -304,7 +308,7 @@ class _DatePickerState extends State<DatePicker> {
                 itemBuilder: (context, index) {
                   return SizedBox(
                     height: SizeConfig.blockSizeVertical! * 100,
-                    width: SizeConfig.screenWidth! * 0.25,
+                    width: SizeConfig.screenWidth! * (widget.width ?? 0.60),
                     child: InkWell(
                       onTap: () {
                         for (var element in days) {

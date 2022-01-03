@@ -34,7 +34,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? informazione;
-
+  String? informazione2;
   @override
   Widget build(BuildContext context) {
     SizeConfig().init(context);
@@ -46,25 +46,18 @@ class _MyHomePageState extends State<MyHomePage> {
         body: Column(
           children: [
             SizedBox(
-              child: DatePicker(
-                height: 19,
-                dataInizio: DateTime.parse(
-                    '2021-01-25 ${DateTime.now().hour.toString().padLeft(2, "0")}:${DateTime.now().minute.toString().padLeft(2, "0")}'),
-                dataFine: DateTime.parse(
-                    '2023-01-25 ${DateTime.now().hour.toString().padLeft(2, "0")}:${DateTime.now().minute.toString().padLeft(2, "0")}'),
-                dayFontSize: 24,
-                monthFontSize: 17,
-                filterVisibility: true,
-                fontColor: Colors.white,
-                backgroundColor: Colors.grey,
-                selectColor: Colors.blue,
-                onChanged: (value) {
-                  setState(() {
-                    informazione = value.toString();
-                  });
-                },
-              ),
-            ),
+                child: DatePicker(
+              filterVisibility: true,
+              height: 19,
+              width: 0.25,
+              dataInizio: DateTime.parse("2021-01-25 10:06"),
+              dataFine: DateTime.parse("2023-01-25 10:06"),
+              onChanged: (value) {
+                setState(() {
+                  informazione = value.toString();
+                });
+              },
+            )),
             Text(informazione.toString()),
           ],
         ));
