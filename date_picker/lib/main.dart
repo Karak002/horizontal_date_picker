@@ -48,6 +48,11 @@ class _MyHomePageState extends State<MyHomePage> {
             SizedBox(
                 child: DatePicker(
               filterVisibility: true,
+              onChanged: (value) {
+                informazione = value.toString();
+
+                setState(() {});
+              },
             )),
             Text(informazione.toString()),
           ],
