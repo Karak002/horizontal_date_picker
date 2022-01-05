@@ -288,7 +288,7 @@ class _DatePickerState extends State<DatePicker> {
     }
 
     selectColor = widget.selectColor ?? HexColor('FF7700');
-    widgetWidth = SizeConfig.screenWidth! * (widget.width ?? 0.60);
+    widgetWidth = SizeConfig.screenWidth! * (widget.width ?? 0.25);
     fontColor = widget.fontColor ?? Colors.black;
     fontSize = widget.monthFontSize ?? 14;
     fontAnnoSize = widget.dimensioneAnno ?? 8;
